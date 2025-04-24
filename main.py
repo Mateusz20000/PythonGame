@@ -8,7 +8,7 @@ def grid_to_iso(x, y, tile_width, tile_height):
 
 # Init
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((1920, 1080))
 clock = pygame.time.Clock()
 
 # Example tile size
@@ -34,7 +34,7 @@ while running:
             for x, y, gid in layer:
                 tile = tmx_data.get_tile_image_by_gid(gid)
                 if tile:
-                    screen_x, screen_y = (x - y) * 32, (x + y) * 16
+                    screen_x, screen_y = (x - y) * 16 + 900, (x + y) * 8 + 250
                     screen.blit(tile, (screen_x, screen_y))
 
     #for x in range(10):
