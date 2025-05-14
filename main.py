@@ -34,7 +34,7 @@ while running:
             for x, y, gid in layer:
                 tile = tmx_data.get_tile_image_by_gid(gid)
                 if tile:
-                    screen_x, screen_y = (x - y) * 16 + 900, (x + y) * 8 + 250
+                    screen_x, screen_y = (x - y) * 32 + 900, (x + y) * 16 + 250
                     screen.blit(tile, (screen_x, screen_y))
 
     #for x in range(10):
