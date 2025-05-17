@@ -44,9 +44,9 @@ class Player():
         self.rect = (self.x, self.y, self.width, self.height)
         
 
-def read_pos(str):
-    str = str.split(",")
-    return int(str[0]), int(str[1])
+def read_pos(s):           # don't call the parameter 'str'
+    x, y = s.split(",")
+    return int(x), int(y)
 
 
 def make_pos(tup):

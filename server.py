@@ -1,78 +1,48 @@
 import socket
-from _thread import *
-import sys
+from _thread import start_new_thread
+import struct
 
 server = "192.168.0.157"
-port = 5555
+port   = 5555
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-try:
-    s.bind((server, port))
-
-except socket.error as e:
-    str(e)
-
-
-
+s.bind((server, port))
 s.listen(2)
-print("Server Started, Waiting for a connection...")
+print("Server started…")
 
+def make_pos(t):      # -> "x,y\n"
+    return f"{t[0]},{t[1]}\n"
 
+def read_pos(s):      # "x,y" -> (x, y)
+    x, y = s.split(',')
+    return int(x), int(y)
 
-def read_pos(str):
-    str = str.split(",")
-    return int(str[0]), int(str[1])
-
-
-def make_pos(tup):
-    return str(tup[0]) + "," + str(tup[1])
-
-
-
-pos = [(0,0),(100,100)]
-
+pos = [(0, 0), (100, 100)]
 
 def threaded_client(conn, player):
+    conn.sendall(make_pos(pos[player]).encode())
 
-    conn.send(str.encode(make_pos(pos[player]))) 
-    replay = ""
-
+    buffer = ""                       # <- collects partial packets
     while True:
-        
         try:
-            data = read_pos(conn.recv(2048))
-            pos[player] = data
+            chunk = conn.recv(2048).decode()
+            if not chunk:
+                break                 # client closed socket
+            buffer += chunk
+            while '\n' in buffer:     # we have at least one full message
+                line, buffer = buffer.split('\n', 1)
+                pos[player] = read_pos(line)
 
-
-            if not data:
-                print("Disconnected")
-                break
-
-            else:
-                if player == 1:
-                    replay = pos[0]
-                if player == 0:
-                    replay = pos[1]
-
-                print("Recived: ", data)
-                print("Sending: ", replay)
-            
-            conn.sendall(str.encode(make_pos(replay)))
-
-        except:
+                other = pos[1 - player]
+                conn.sendall(make_pos(other).encode())
+        except OSError:
             break
 
     print("Lost connection")
     conn.close()
 
-
-
 currentPlayer = 0
-
 while True:
     conn, addr = s.accept()
-    print("Connected to: ", addr)
-
     start_new_thread(threaded_client, (conn, currentPlayer))
     currentPlayer += 1
