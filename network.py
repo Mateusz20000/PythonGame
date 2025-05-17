@@ -1,4 +1,3 @@
-# network.py
 import socket
 
 class Network:
@@ -6,16 +5,15 @@ class Network:
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect(("192.168.0.157", 5555))
         self.buffer = ""
-        self.pos = self._recvall()          # starting position from server
+        self.pos = self._recvall()
 
     def getPos(self):
         return self.pos
 
-    def send(self, data):                   # data already like "x,y"
+    def send(self, data):
         self.client.sendall((data + "\n").encode())
         return self._recvall()
 
-    # --- internal -------------------------------------------------
     def _recvall(self):
         while '\n' not in self.buffer:
             chunk = self.client.recv(2048).decode()

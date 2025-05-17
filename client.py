@@ -44,7 +44,7 @@ class Player():
         self.rect = (self.x, self.y, self.width, self.height)
         
 
-def read_pos(s):           # don't call the parameter 'str'
+def read_pos(s):
     x, y = s.split(",")
     return int(x), int(y)
 
@@ -69,7 +69,7 @@ def main():
     startPos = read_pos(n.getPos())
 
     p = Player(startPos[0], startPos[1], 100, 100, (0, 255, 0))
-    p2 = Player(0, 0, 100, 100, (0, 255, 0))
+    p2 = Player(0, 0, 100, 100, (255, 0, 0))
     clock = pygame.time.Clock()
 
     while run:

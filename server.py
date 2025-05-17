@@ -10,10 +10,10 @@ s.bind((server, port))
 s.listen(2)
 print("Server started…")
 
-def make_pos(t):      # -> "x,y\n"
+def make_pos(t):
     return f"{t[0]},{t[1]}\n"
 
-def read_pos(s):      # "x,y" -> (x, y)
+def read_pos(s):
     x, y = s.split(',')
     return int(x), int(y)
 
@@ -22,14 +22,14 @@ pos = [(0, 0), (100, 100)]
 def threaded_client(conn, player):
     conn.sendall(make_pos(pos[player]).encode())
 
-    buffer = ""                       # <- collects partial packets
+    buffer = ""             
     while True:
         try:
             chunk = conn.recv(2048).decode()
             if not chunk:
-                break                 # client closed socket
+                break
             buffer += chunk
-            while '\n' in buffer:     # we have at least one full message
+            while '\n' in buffer:
                 line, buffer = buffer.split('\n', 1)
                 pos[player] = read_pos(line)
 
