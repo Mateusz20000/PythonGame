@@ -58,34 +58,77 @@ import tile
 #    pygame.display.update()
 
 
-def show(n, s, size):
 
-        grass_img = pygame.image.load("tiles/grass.png").convert_alpha()
+def show(n, s, camera, tile_images, size):
+    hovered_tile = None
+    mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        for y in range(size):
-            for x in range(size):
-                iso_x = (x - y) * (64 // 2) + 750
-                iso_y = (x + y) * (32 // 2) + 100
+    for y in range(size):
+        for x in range(size):
+            iso_x = (x - y) * 32 + 750 + camera.offset_x
+            iso_y = (x + y) * 16 + 100 + camera.offset_y
 
-                try:
-                    response = n.get_tile(x,y)
-                    tiled = response["tile"]["terrain"]
-                    if(tiled == "grass"):
-                        s.blit(grass_img, (iso_x, iso_y))
-                except ConnectionError:
-                    print("Server closed the connection.")
-                    return
+            try:
+                response = n.get_tile(x, y)
+                terrain = response["tile"]["terrain"]
+                image = tile_images.get(terrain)
 
-                #if(tile_type["terrain"] == "grass"):
-                #    s.blit(pygame.image.load("tiles\grass.png").convert_alpha(), (iso_x, iso_y))
+                if image:
+                    s.blit(image, (iso_x, iso_y))
+            except Exception as e:
+                print(f"[Error fetching tile {x},{y}]: {e}")
 
-                #s.blit(n.get_tile(x, y), (iso_x, iso_y))
+            # Check for hover
+            rel_x = mouse_x - iso_x
+            rel_y = mouse_y - iso_y - 32
 
-        pygame.display.update()
+            # Diamond hitbox
+            if 0 <= rel_x <= 64 and 0 <= rel_y <= 32:
+                # Diamond equation
+                dx = abs(rel_x - 32)
+                dy = abs(rel_y - 16)
+                if dx / 32 + dy / 16 <= 1:
+                    hovered_tile = (x, y, iso_x, iso_y)
+
+    # Draw hover highlight AFTER terrain tiles
+    if hovered_tile:
+        x, y, iso_x, iso_y = hovered_tile
+
+        # Create a diamond shape highlight
+        points = [
+            (iso_x + 32, iso_y + 32),       # top #I ADDED IT HERE
+            (iso_x + 64, iso_y + 48),  # right
+            (iso_x + 32, iso_y + 64),  # bottom
+            (iso_x, iso_y + 48),       # left
+        ]
+        pygame.draw.polygon(s, (255, 255, 0, 80), points)
+
+        # Coordinates overlay
+        font = pygame.font.SysFont(None, 24)
+        label = font.render(f"Tile: ({x}, {y})", True, (255, 255, 255))
+        s.blit(label, (10, 10))
+
+        #changing for flowwers
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                n.set_tile(x, y, "sunflower")
 
 
-                
 
+        
+
+
+def screen_to_iso_tile(mx, my, camera_offset_x, camera_offset_y):
+    # Adjust for camera and origin offset
+    mx -= (750 + camera_offset_x)
+    my -= (100 + camera_offset_y)
+
+    # Inverse of isometric transform
+    x = (mx / 32 + my / 16) / 2
+    y = (my / 16 - mx / 32) / 2
+
+    return int(x), int(y)
 
 
 def main():
@@ -95,6 +138,12 @@ def main():
     network = Network()
     pygame.init()
     screen = pygame.display.set_mode((1920, 1080))
+    camera = tile.Camera()
+
+    tile_images = {
+        "grass": pygame.image.load("tiles/grass.png").convert_alpha(),
+        "sunflower": pygame.image.load("tiles/sunflower_IV.png").convert_alpha()
+    }
 
 #    print(n.ping())                     # {'ok': True, 'msg': 'pong'}
 
@@ -113,23 +162,25 @@ def main():
 
         clock.tick(60)
 
-        show(network, screen, 32)
-
-        #try:
-        #    print(network.get_tile(0,0))
-        #except ConnectionError:
-        #    print("Server closed the connection.")
-        #    return
-
-
-
+        screen.fill((83, 219, 219))
 
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
 
                 run = False
-                pygame.quit()
+                
+
+            camera.handle_event(event)
+
+
+    
+
+        show(network, screen, camera, tile_images, 32)
+
+        pygame.display.update()
+
+    pygame.quit()
 
 
 

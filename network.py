@@ -38,7 +38,9 @@ class LineBuffer:
 class Network:
     def __init__(self, server="192.168.0.157", port=5555):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((server, port))
+        try: sock.connect((server, port))
+        except:
+            pass
         self.stream = LineBuffer(sock)
 
     def send(self, text_line: str) -> str:

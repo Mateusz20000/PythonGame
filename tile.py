@@ -68,7 +68,26 @@ class TileMap:
             self.tiles[y][x] = tile
 
 
+class Camera:
+    def __init__(self):
+        self.offset_x = 0
+        self.offset_y = 0
+        self.dragging = False
+        self.last_mouse_pos = (0, 0)
 
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3:
+            self.dragging = True
+            self.last_mouse_pos = pygame.mouse.get_pos()
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 3:
+            self.dragging = False
+        elif event.type == pygame.MOUSEMOTION and self.dragging:
+            mx, my = pygame.mouse.get_pos()
+            dx = mx - self.last_mouse_pos[0]
+            dy = my - self.last_mouse_pos[1]
+            self.offset_x += dx
+            self.offset_y += dy
+            self.last_mouse_pos = (mx, my)
 
 
 
