@@ -112,7 +112,7 @@ def show(n, s, camera, tile_images, size):
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
-                s1 = tile.Tile("sunflower",None)
+                s1 = tile.Tile("sunflower",None).to_dict()
 
                 n.set_tile(x, y, s1)
 
