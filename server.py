@@ -7,9 +7,13 @@ import tile
 
 
 class TileServer:
-    def __init__(self, host="192.168.0.157", port=5555, size=(32, 32)):
+    def __init__(self, host="10.58.0.7", port=5555, size=(32, 32)):
         default_tile = tile.Tile("grass")
         self.map = tile.TileMap(size[0], size[1], default_tile)
+        b1 = tile.Tile("truck_front", None)
+        b2 = tile.Tile("truck_back", None)
+        self.map.set(5, 6, b1)
+        self.map.set(5, 5, b2)
         self.host = host
         self.port = port
 

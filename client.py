@@ -142,7 +142,9 @@ def main():
 
     tile_images = {
         "grass": pygame.image.load("tiles/grass.png").convert_alpha(),
-        "sunflower": pygame.image.load("tiles/sunflower_IV.png").convert_alpha()
+        "sunflower": pygame.image.load("tiles/sunflower_IV.png").convert_alpha(),
+        "truck_front": pygame.image.load("tiles/truck_front.png").convert_alpha(),
+        "truck_back": pygame.image.load("tiles/truck_back.png").convert_alpha()
     }
 
 #    print(n.ping())                     # {'ok': True, 'msg': 'pong'}
