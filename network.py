@@ -2,7 +2,6 @@ import socket, json
 
 
 class LineBuffer:
-    """Read / write  '\n'-terminated lines on a blocking socket."""
     def __init__(self, sock: socket.socket):
         self.sock = sock
         self.buf  = b""
@@ -36,7 +35,7 @@ class LineBuffer:
 
 
 class Network:
-    def __init__(self, server="10.58.0.7", port=5555):
+    def __init__(self, server="192.168.0.157", port=5555):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try: sock.connect((server, port))
         except:
@@ -62,3 +61,13 @@ class Network:
 
     def close(self):
         self.stream.close()
+
+    def get_player(self):
+        return self._cmd({"op": "get_player"})
+
+    def update_player(self, changes: dict):
+        """
+        changes: partial dict, e.g. {"money": 250} or
+                 {"inventory": {"apple": 3, "wood": 10}}
+        """
+        return self._cmd({"op": "update_player", "changes": changes})
