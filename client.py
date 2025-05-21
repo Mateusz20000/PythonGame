@@ -2,126 +2,120 @@ import pygame
 from network import Network
 import library
 
+WIDTH, HEIGHT = 1920, 1080
+TILEMAP_SIZE = 23
+FPS = 60
 
-def show(network, surface, camera, tile_images, player, size):
+
+tile_images: dict[str, pygame.Surface] = {}
+def get_tile_img(kind: str, stage: int):
+    key = f"{kind}_{stage}"
+    if key not in tile_images:
+        tile_images[key] = pygame.image.load(
+            f"tiles/{kind}_{stage}.png").convert_alpha()
+    return tile_images[key]
+
+def draw_map(net: Network, surf: pygame.Surface, cam: library.Camera, hovered, size=TILEMAP_SIZE):
     hovered_tile = None
-    mouse_x, mouse_y = pygame.mouse.get_pos()
+    mx, my = pygame.mouse.get_pos()
 
     for y in range(size):
         for x in range(size):
-            iso_x = (x - y) * 32 + 750 + camera.offset_x
-            iso_y = (x + y) * 16 + 100 + camera.offset_y
+            iso_x = (x - y) * 32 + 750 + cam.offset_x
+            iso_y = (x + y) * 16 + 100 + cam.offset_y
 
             try:
-                response = network.get_tile(x, y)
-                terrain = response["tile"]["terrain"]
-                image = tile_images.get(terrain)
-
-                if image:
-                    surface.blit(image, (iso_x, iso_y))
+                r = net.get_tile(x, y)
+                terrain = r["tile"]["terrain"]
+                plant   = r["tile"]["plant"]
+                if plant:
+                    img = get_tile_img(plant["kind"], plant["stage"])
+                else:
+                    img = get_tile_img(terrain, 0)
+                surf.blit(img, (iso_x, iso_y))
             except Exception as e:
-                print(f"[Error fetching tile {x},{y}]: {e}")
+                print(f"[Tile {x},{y}] {e}")
 
-            rel_x = mouse_x - iso_x
-            rel_y = mouse_y - iso_y - 32
-
-            if 0 <= rel_x <= 64 and 0 <= rel_y <= 32:
-                dx = abs(rel_x - 32)
-                dy = abs(rel_y - 16)
-                if dx / 32 + dy / 16 <= 1:
+            # diamond hit-test
+            dx, dy = mx - iso_x, my - (iso_y + 32)
+            if 0 <= dx <= 64 and 0 <= dy <= 32:
+                if abs(dx - 32) / 32 + abs(dy - 16) / 16 <= 1:
                     hovered_tile = (x, y, iso_x, iso_y)
 
     if hovered_tile:
-        x, y, iso_x, iso_y = hovered_tile
-
-        points = [
-            (iso_x + 32, iso_y + 32),
-            (iso_x + 64, iso_y + 48),
-            (iso_x + 32, iso_y + 64),
-            (iso_x, iso_y + 48)
-        ]
-        pygame.draw.polygon(surface, (200, 200, 200), points)
-
+        x, y, ix, iy = hovered_tile
+        pts = [(ix+32, iy+32), (ix+64, iy+48), (ix+32, iy+64), (ix, iy+48)]
+        pygame.draw.polygon(surf, (200, 200, 200), pts, 0)
         font = pygame.font.SysFont(None, 24)
-        label = font.render(f"Tile: ({x}, {y})", True, (255, 255, 255))
-        surface.blit(label, (10, 10))
+        surf.blit(font.render(f"Tile: ({x},{y})", True, (255,255,255)), (10, 10))
 
-        for event in pygame.event.get():
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and player.inventory["sunflower"] > 0:
-
-                s1 = library.Tile("sunflower",None).to_dict()
-
-                network.set_tile(x, y, s1)
-
-
-
-
-        
-
-
-def screen_to_iso_tile(mx, my, camera_offset_x, camera_offset_y):
-    mx -= (750 + camera_offset_x)
-    my -= (100 + camera_offset_y)
-
-    x = (mx / 32 + my / 16) / 2
-    y = (my / 16 - mx / 32) / 2
-
-    return int(x), int(y)
-
+    return hovered_tile
 
 def main():
-
-    run = True
-    clock = pygame.time.Clock()
-    network = Network()
     pygame.init()
-    screen = pygame.display.set_mode((1920, 1080))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    clock  = pygame.time.Clock()
+
+    music = library.Music()
+
+    net = Network()
+    try:
+        welcome = net.stream.recv_json()
+    except ConnectionError as e:
+        print(f"Connection failed: {e}")
+        return
+    player  = library.Player.from_dict(welcome["player"])
+    player.add_item("hay_seed", 10)
+
     camera = library.Camera()
 
-    welcome = network.stream.recv_json()
-    player = library.Player.from_dict(welcome["player"])
-    
-
-    tile_images = {
-        "grass": pygame.image.load("tiles/grass.png").convert_alpha(),
-        "sunflower": pygame.image.load("tiles/sunflower_IV.png").convert_alpha(),
-        "truck_front": pygame.image.load("tiles/truck_front.png").convert_alpha(),
-        "truck_back": pygame.image.load("tiles/truck_back.png").convert_alpha()
-    }
+    selected_seed = "sunflower"
+    running = True
 
 
-
-    while run:
-
-        clock.tick(60)
-
+    while running:
         screen.fill((83, 219, 219))
 
-        for event in pygame.event.get():
+        hovered = draw_map(net, screen, camera, None)
 
-            if event.type == pygame.QUIT:
+        for ev in pygame.event.get():
+            if ev.type == pygame.QUIT:
+                running = False
+            camera.handle_event(ev)
+            music.handle_event(ev)
 
-                run = False
-                
+            if ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_1: selected_seed = "sunflower"
+                elif ev.key == pygame.K_2: selected_seed = "corn"
+                elif ev.key == pygame.K_3: selected_seed = "hay"
+                elif ev.key == pygame.K_4: selected_seed = "pumpkin"
+                elif ev.key == pygame.K_e and hovered:
+                    x, y, *_ = hovered
+                    net.harvest(x, y)
 
-            camera.handle_event(event)
+            if ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 and hovered:
+                x, y, *_ = hovered
+                seed_key = f"{selected_seed}_seed"
+                if player.inventory.get(seed_key, 0) > 0:
+                    net.plant(x, y, selected_seed)
+            
+            elif ev.type == pygame.KEYDOWN and ev.key == pygame.K_e and hovered:
+                x, y, *_ = hovered
+                net.harvest(x, y)     
 
+        snap   = net.get_player()
+        player = library.Player.from_dict(snap["player"])
 
-
-
-        show(network, screen, camera, tile_images, player, 32)
-
-
-
-        nfplayer = network.get_player()
-        player = library.Player.from_dict(nfplayer["player"])
+        font = pygame.font.SysFont(None, 24)
+        screen.blit(
+            font.render(f"Selected: {selected_seed}", True, (255,255,255)),
+            (10, 30)
+        )
 
         pygame.display.update()
+        clock.tick(FPS)
 
     pygame.quit()
-
-
-
 
 
 main()

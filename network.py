@@ -6,16 +6,15 @@ class LineBuffer:
         self.sock = sock
         self.buf  = b""
 
-    def readline(self) -> bytes:
-        while b"\n" not in self.buf:
-            try:
-                chunk = self.sock.recv(1024)
-                if not chunk:
-                    raise ConnectionError("socket closed")
-                self.buf += chunk
-            except ConnectionResetError:
-                raise ConnectionError("connection reset by peer")
-        line, self.buf = self.buf.split(b"\n", 1)
+    def readline(self):
+        line = b''
+        while True:
+            ch = self.sock.recv(1)
+            if not ch:
+                raise ConnectionError("socket closed")
+            if ch == b'\n':
+                break
+            line += ch
         return line
 
     def sendline(self, data: bytes | str):
@@ -71,3 +70,9 @@ class Network:
                  {"inventory": {"apple": 3, "wood": 10}}
         """
         return self._cmd({"op": "update_player", "changes": changes})
+    
+    def plant(self, x, y, kind):
+        return self._cmd({"op": "plant", "x": x, "y": y, "kind": kind})
+
+    def harvest(self, x, y):
+        return self._cmd({"op": "harvest", "x": x, "y": y})
