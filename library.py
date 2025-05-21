@@ -2,9 +2,13 @@ import pygame
 import random
 import plants
 import threading
+import time
 
 
 
+PLANT_STAGES = {"corn": 4, "hay": 5, "sunflower": 4, "pumpkin": 6}
+MUSIC_END = pygame.USEREVENT + 1
+SHOP_TILES = {(5, 5), (5, 6)}
 
 class Player:
 
@@ -42,9 +46,6 @@ class Player:
     def add_item(self, item, qty=1):
         self.inventory[item] = self.inventory.get(item, 0) + qty
 
-
-
-PLANT_STAGES = {"corn": 4, "hay": 5, "sunflower": 4, "pumpkin": 6}
 
 
 class Plant:
@@ -147,9 +148,6 @@ class Camera:
 
 
 
-
-MUSIC_END = pygame.USEREVENT + 1
-
 class Music:
 
     def __init__(self):
@@ -180,3 +178,68 @@ class Music:
         if event.type == MUSIC_END:
             self.play_next()
 
+
+
+class Button:
+    """Clickable rectangle that re‑renders its label on demand."""
+    def __init__(self, rect: pygame.Rect, font: pygame.font.Font, text: str, callback):
+        self.rect = rect
+        self.font = font
+        self.text = text
+        self.callback = callback
+        self._render()
+
+    def _render(self):
+        self.txt_surface = self.font.render(self.text, True, (0, 0, 0))
+
+    def set_text(self, new_text: str):
+        self.text = new_text
+        self._render()
+
+    def draw(self, surf: pygame.Surface):
+        pygame.draw.rect(surf, (200, 200, 200), self.rect)
+        pygame.draw.rect(surf, (0, 0, 0), self.rect, 2)
+        tx = self.rect.x + (self.rect.w - self.txt_surface.get_width()) // 2
+        ty = self.rect.y + (self.rect.h - self.txt_surface.get_height()) // 2
+        surf.blit(self.txt_surface, (tx, ty))
+
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONUP and event.button == 1 and self.rect.collidepoint(event.pos):
+            self.callback()
+            
+
+
+class Shop:
+    BASE = {
+        "corn": 10, "hay": 5, "sunflower": 15, "pumpkin": 20,
+        "corn_seed": 3, "hay_seed": 2, "sunflower_seed": 5, "pumpkin_seed": 8,
+    }
+
+    def __init__(self):
+        self.prices = self.BASE.copy()
+        threading.Thread(target=self._price_loop, daemon=True).start()
+
+    def _price_loop(self):
+        while True:
+            time.sleep(random.randint(20, 40))
+            self.update_prices()
+
+    def update_prices(self):
+        for k in self.prices:
+            change = random.uniform(-0.2, 0.2)
+            self.prices[k] = max(1, int(self.prices[k] * (1 + change)))
+    
+    def buy_seed(self, player, seed):
+        p = self.prices[seed]
+        if player.money >= p:
+            player.money -= p
+            player.add_item(seed, 1)
+            return True
+        return False
+
+    def sell_crop(self, player, crop):
+        if player.inventory.get(crop, 0) > 0:
+            player.inventory[crop] -= 1
+            player.money += self.prices[crop]
+            return True
+        return False
