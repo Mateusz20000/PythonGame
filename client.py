@@ -10,7 +10,11 @@ FPS = 60
 tile_images: dict[str, pygame.Surface] = {}
 def get_tile_img(kind: str, stage: int):
     key = f"{kind}_{stage}"
-    if key not in tile_images:
+    if kind == "truck_front":
+        return pygame.image.load("tiles/truck_front.png").convert_alpha()
+    elif kind == "truck_back":
+        return pygame.image.load("tiles/truck_back.png").convert_alpha()
+    elif key not in tile_images:
         tile_images[key] = pygame.image.load(
             f"tiles/{kind}_{stage}.png").convert_alpha()
     return tile_images[key]
@@ -74,7 +78,7 @@ def main():
 
 
     while running:
-        screen.fill((83, 219, 219))
+        screen.fill((3, 165, 252))
 
         hovered = draw_map(net, screen, camera, None)
 

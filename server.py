@@ -13,10 +13,10 @@ class TileServer:
 
         default_tile = library.Tile("grass")
         self.map = library.TileMap(size[0], size[1], default_tile)
-        #b1 = library.Tile("truck_front", None)
-        #b2 = library.Tile("truck_back", None)
-        #self.map.set(5, 6, b1)
-        #self.map.set(5, 5, b2)
+        b1 = library.Tile("truck_front", None)
+        b2 = library.Tile("truck_back", None)
+        self.map.set(5, 6, b1)
+        self.map.set(5, 5, b2)
         self.host = host
         self.port = port
         self.players  = {}
