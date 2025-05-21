@@ -1,96 +1,126 @@
 import pygame
 from network import Network
+import library
 
-width = 500
-height = 500
 
-win = pygame.display.set_mode((width, height))
-pygame.display.set_caption("Client")
+def show(network, surface, camera, tile_images, player, size):
+    hovered_tile = None
+    mouse_x, mouse_y = pygame.mouse.get_pos()
 
-clientNumber = 0
+    for y in range(size):
+        for x in range(size):
+            iso_x = (x - y) * 32 + 750 + camera.offset_x
+            iso_y = (x + y) * 16 + 100 + camera.offset_y
 
-class Player():
+            try:
+                response = network.get_tile(x, y)
+                terrain = response["tile"]["terrain"]
+                image = tile_images.get(terrain)
 
-    def __init__(self, x, y, width, height, color):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.color = color
-        self.rect = (x,y,width,height)
-        self.vel = 3
+                if image:
+                    surface.blit(image, (iso_x, iso_y))
+            except Exception as e:
+                print(f"[Error fetching tile {x},{y}]: {e}")
 
-    def draw(self, win):
-        pygame.draw.rect(win, self.color, self.rect)
+            rel_x = mouse_x - iso_x
+            rel_y = mouse_y - iso_y - 32
 
-    def move(self):
-        keys = pygame.key.get_pressed()
+            if 0 <= rel_x <= 64 and 0 <= rel_y <= 32:
+                dx = abs(rel_x - 32)
+                dy = abs(rel_y - 16)
+                if dx / 32 + dy / 16 <= 1:
+                    hovered_tile = (x, y, iso_x, iso_y)
 
-        if keys[pygame.K_LEFT]:
-            self.x -= self.vel
+    if hovered_tile:
+        x, y, iso_x, iso_y = hovered_tile
 
-        if keys[pygame.K_RIGHT]:
-            self.x += self.vel
+        points = [
+            (iso_x + 32, iso_y + 32),
+            (iso_x + 64, iso_y + 48),
+            (iso_x + 32, iso_y + 64),
+            (iso_x, iso_y + 48)
+        ]
+        pygame.draw.polygon(surface, (200, 200, 200), points)
 
-        if keys[pygame.K_UP]:
-            self.y -= self.vel
+        font = pygame.font.SysFont(None, 24)
+        label = font.render(f"Tile: ({x}, {y})", True, (255, 255, 255))
+        surface.blit(label, (10, 10))
 
-        if keys[pygame.K_DOWN]:
-            self.y += self.vel
+        for event in pygame.event.get():
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and player.inventory["sunflower"] > 0:
 
-        self.update()
+                s1 = library.Tile("sunflower",None).to_dict()
 
-    def update(self):
-        self.rect = (self.x, self.y, self.width, self.height)
+                network.set_tile(x, y, s1)
+
+
+
+
         
 
-def read_pos(s):
-    x, y = s.split(",")
+
+def screen_to_iso_tile(mx, my, camera_offset_x, camera_offset_y):
+    mx -= (750 + camera_offset_x)
+    my -= (100 + camera_offset_y)
+
+    x = (mx / 32 + my / 16) / 2
+    y = (my / 16 - mx / 32) / 2
+
     return int(x), int(y)
-
-
-def make_pos(tup):
-    return str(tup[0]) + "," + str(tup[1])
-
-
-def redrawWindow(win, player, player2):
-
-    win.fill((255,255,255))
-    player.draw(win)
-    player2.draw(win)
-    pygame.display.update()
 
 
 def main():
 
     run = True
-
-    n = Network()
-    startPos = read_pos(n.getPos())
-
-    p = Player(startPos[0], startPos[1], 100, 100, (0, 255, 0))
-    p2 = Player(0, 0, 100, 100, (255, 0, 0))
     clock = pygame.time.Clock()
+    network = Network()
+    pygame.init()
+    screen = pygame.display.set_mode((1920, 1080))
+    camera = library.Camera()
+
+    welcome = network.stream.recv_json()
+    player = library.Player.from_dict(welcome["player"])
+    
+
+    tile_images = {
+        "grass": pygame.image.load("tiles/grass.png").convert_alpha(),
+        "sunflower": pygame.image.load("tiles/sunflower_IV.png").convert_alpha(),
+        "truck_front": pygame.image.load("tiles/truck_front.png").convert_alpha(),
+        "truck_back": pygame.image.load("tiles/truck_back.png").convert_alpha()
+    }
+
+
 
     while run:
 
         clock.tick(60)
 
-
-        p2Pos =  read_pos(n.send(make_pos((p.x, p.y))))
-        p2.x = p2Pos[0]
-        p2.y = p2Pos[1]
-        p2.update()
+        screen.fill((83, 219, 219))
 
         for event in pygame.event.get():
 
             if event.type == pygame.QUIT:
 
                 run = False
-                pygame.quit()
+                
 
-        p.move()
-        redrawWindow(win, p, p2)
+            camera.handle_event(event)
+
+
+
+
+        show(network, screen, camera, tile_images, player, 32)
+
+
+
+        nfplayer = network.get_player()
+        player = library.Player.from_dict(nfplayer["player"])
+
+        pygame.display.update()
+
+    pygame.quit()
+
+
 
 
 
