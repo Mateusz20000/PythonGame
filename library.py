@@ -14,10 +14,10 @@ class Player:
         self.money = money
         self.inventory = inventory or {}
 
-        self.add_item("sunflower_seed", 10)
-        self.add_item("hay_seed", 10)
-        self.add_item("corn_seed", 10)
-        self.add_item("pumpkin_seed", 10)
+        self.add_item("sunflower_seed", 30)
+        self.add_item("hay_seed", 30)
+        self.add_item("corn_seed", 30)
+        self.add_item("pumpkin_seed", 30)
 
     def to_dict(self):
         return {
@@ -173,7 +173,7 @@ class Music:
 
     def play_next(self):
         pygame.mixer.music.load(self.playlist[self.current])
-        pygame.mixer.music.set_volume(0.01)
+        pygame.mixer.music.set_volume(0.06)
         pygame.mixer.music.play()
         self.current = (self.current + 1) % len(self.playlist)
     def handle_event(self, event):

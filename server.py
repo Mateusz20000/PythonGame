@@ -4,6 +4,7 @@ import json
 import library
 import network
 import time
+import random
 
 
 class TileServer:
@@ -150,7 +151,10 @@ class TileServer:
                 for x in range(self.map.width):
                     t = self.map.get(x, y)
                     if t.plant:
-                        t.plant.grow()
+                        
+                        ran = random.randint(0,2)
+                        if ran == 1:
+                            t.plant.grow()
         
 
 
