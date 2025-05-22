@@ -9,7 +9,7 @@ import random
 
 class TileServer:
 
-    def __init__(self, host="192.168.0.157", port=5555, size=(23, 23)):
+    def __init__(self, host="10.58.0.18", port=5555, size=(23, 23)):
 
         default_tile = library.Tile("grass")
         self.map = library.TileMap(size[0], size[1], default_tile)
@@ -130,8 +130,11 @@ class TileServer:
 
                 if tile.plant and tile.plant.is_mature():
                     prod_key = tile.plant.kind
+                    seed_key = f"{prod_key}_seed"
                     tile.plant = None
                     player.add_item(prod_key, 1)
+                    print(prod_key)
+                    player.add_item(seed_key, 2)
                     return {"ok": True}
 
                 return {"ok": False, "err": "not_mature"}

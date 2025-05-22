@@ -34,7 +34,7 @@ class LineBuffer:
 
 
 class Network:
-    def __init__(self, server="192.168.0.157", port=5555):
+    def __init__(self, server="10.58.0.18", port=5555):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try: sock.connect((server, port))
         except:
